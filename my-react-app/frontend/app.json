@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "Thai Pronunciation",
+    "slug": "thai-pronunciation-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/AppLogo.png",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "android": {
+      "package": "com.example.thaipronunciation",
+      "permissions": [
+        "RECORD_AUDIO",
+        "INTERNET",
+        "READ_MEDIA_IMAGES",
+        "READ_EXTERNAL_STORAGE"
+      ]
+    },
+    "ios": {
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "แอปต้องใช้ไมโครโฟนเพื่อบันทึกเสียงพูดของคุณสำหรับฝึกออกเสียง",
+        "NSPhotoLibraryUsageDescription": "อนุญาตให้แอปเข้าถึงรูปภาพเพื่อเปลี่ยนรูปโปรไฟล์"
+      }
+    },
+    "plugins": [
+      "expo-audio",
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#fcebd2"
+        }
+      ],
+      "expo-status-bar",
+      "expo-asset"
+    ]
+  }
+}

@@ -1,0 +1,125 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ตารางบันทึกรหัส OTP ชั่วคราวสำหรับการยืนยันอีเมล
+model EmailVerification {
+  emailveri_id        Int      @id @default(autoincrement())
+  email     String
+  purpose   String   // "register" | "change_email" | "reset_password"
+  otpCode   String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@unique([email, purpose])
+}
+
+// ตารางข้อมูลผู้ใช้จริงหลังจากยืนยันตัวตนสำเร็จแล้ว
+model User {
+  user_id        Int      @id @default(autoincrement())
+  username  String
+  email     String   @unique
+  password  String
+  role      String   @default("user") // "user" | "admin"
+  createdAt DateTime @default(now())
+
+  sessions         Session[]
+  learningStats    LearningStats?
+  practiceAttempts PracticeAttempt[]
+}
+
+// ตารางบทเรียน (Topic) สำหรับ admin จัดการ
+model Topic {
+  topic_id        Int      @id @default(autoincrement())
+  title     String
+  level     String   // "easy" | "medium"
+  icon_url  String?  // URL รูป icon บน Supabase Storage
+  createdAt DateTime @default(now())
+
+  sentences Sentence[]
+
+  @@index([level])
+}
+
+// ตารางประโยค (Sentence) สำหรับ admin จัดการ
+model Sentence {
+  sentence_id              Int      @id @default(autoincrement())
+  topic_id        Int?     // null = ประโยค Weekly (ไม่ผูกกับบทเรียนปกติ)
+  level           String   // "easy" | "medium"
+  thai            String
+  karaoke         String
+  eng             String
+  label           String
+  pronunciation   String?  // คำอ่าน / รูปแบบการออกเสียง
+  is_weekly       Boolean  @default(false) // true = ประโยค Weekly (topic_id ต้องเป็น null) / false = ประโยคในบทเรียนปกติ
+  audio_file_name String   // ชื่อไฟล์เสียงที่อัปโหลดขึ้น Supabase Storage
+  audio_url       String?  // public URL ของไฟล์เสียง
+  image_url       String?  // public URL ของรูปภาพ (optional)
+  createdAt       DateTime @default(now())
+
+  topic            Topic?            @relation(fields: [topic_id], references: [topic_id], onDelete: Cascade)
+  practiceAttempts PracticeAttempt[]
+  weeklySchedule   WeeklySchedule?   // สัปดาห์ที่ประโยค Weekly นี้ถูกแสดง (ไม่มี = ยังไม่กำหนด)
+
+  @@index([topic_id])
+  @@index([level])
+  @@index([level, is_weekly])
+}
+
+// ตารางกำหนดการ Weekly Sentence: ระดับหนึ่ง 1 สัปดาห์ มีได้ 1 ประโยค (week_start = วันจันทร์ YYYY-MM-DD เวลาไทย)
+model WeeklySchedule {
+  schedule_id          Int      @id @default(autoincrement())
+  sentence_id Int      @unique
+  level       String
+  week_start  String
+  createdAt   DateTime @default(now())
+
+  sentence Sentence @relation(fields: [sentence_id], references: [sentence_id], onDelete: Cascade)
+
+  @@unique([level, week_start])
+}
+
+// ตารางเก็บ session การล็อกอินของผู้ใช้
+model Session {
+  session_id BigInt   @id @default(autoincrement())
+  user_id    Int
+  created_at DateTime @default(now())
+  expired_at DateTime
+
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+// ตารางบันทึกประวัติการฝึก
+model PracticeAttempt {
+  attempt_id          Int      @id @default(autoincrement())
+  userId      Int
+  sentenceId  Int
+  passed      Boolean?
+  attemptedAt DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [user_id], onDelete: Cascade)
+  sentence Sentence @relation(fields: [sentenceId], references: [sentence_id], onDelete: Cascade)
+
+  @@index([userId, attemptedAt])
+  @@index([sentenceId])
+}
+
+// ตารางเก็บสถิติการเรียน ผูกกับ user จริง 1 ต่อ 1
+model LearningStats {
+  stats_id                   Int      @id @default(autoincrement())
+  userId               Int      @unique
+  exercisesCompleted   Int      @default(0)
+  completedSentenceIds String[] @default([])
+  updatedAt            DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [user_id], onDelete: Cascade)
+
+  @@index([userId])
+}
