@@ -19,9 +19,7 @@ from stdModel import compare_result_async, match_sentence, AudioInputError
 
 app = FastAPI(title="Thai Pronunciation Evaluation API")
 
-# 🎯 เพิ่มใหม่: ตรวจ JWT token เดียวกับที่ฝั่ง Node (APIServer.cjs) ออกให้ตอน login
-# เดิม endpoint นี้ไม่มีการยืนยันตัวตนใด ๆ เลย ใครมี ngrok URL ก็ยิงประเมินเสียงได้ไม่จำกัด
-# และผลลัพธ์ก็ไม่เคยผูกกับ user คนไหนจริง ๆ (rec_history_id เป็นแค่ค่าที่ client สร้างเองได้)
+# ตรวจ JWT token เดียวกับที่ฝั่ง Node (APIServer.cjs) ออกให้ตอน login
 # JWT ตรวจสอบตัวเองได้ (self-contained) ไม่ต้องต่อ DB เดียวกับ Node แค่ใช้ JWT_SECRET ตัวเดียวกัน
 JWT_SECRET = os.environ.get("JWT_SECRET")
 if not JWT_SECRET:
@@ -44,13 +42,10 @@ def get_current_user(authorization: str = Header(None)):
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="เซสชันไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่")
 
-# 🎯 เพิ่มใหม่: จำกัดขนาดไฟล์เสียงสูงสุด กันเซิร์ฟเวอร์โดน DOS ด้วยไฟล์ใหญ่ผิดปกติ
-# (การอัดเสียงพูดปกติไม่กี่วินาที ไม่ควรเกิน 10MB อยู่แล้ว)
+# จำกัดขนาดไฟล์เสียงสูงสุด กันเซิร์ฟเวอร์โดน DOS ด้วยไฟล์ใหญ่ผิดปกติ
 MAX_AUDIO_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
 
-# 🎯 แก้ไข: เดิม allow_origins=["*"] คู่กับ allow_credentials=True เป็นคอมโบที่ผิด spec ของ CORS
-# (บราวเซอร์จะปฏิเสธจริง ๆ ด้วยซ้ำ) และเปิดกว้างเกินจำเป็น แอปมือถือ (native fetch) ไม่ส่ง Origin
-# header อยู่แล้วจึงไม่ติด CORS จากตรงนี้ตั้งแต่แรก จำกัด origin ให้เหมือนฝั่ง APIServer.cjs แทน
+# จำกัด origin ให้เหมือนฝั่ง APIServer.cjs
 ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:3000",
@@ -83,7 +78,7 @@ async def evaluate_pronunciation(
     temp_user_audio_path = None
     try:
         # รวมค่าเพื่อรองรับทั้งสองชื่อ
-        # ไม่ตั้งค่าเริ่มต้นเป็น "1" แล้ว: เดิมถ้าไม่มี id จะกลายเป็นประโยค #1 ทำให้ค้นข้อความผิดประโยค
+        # ไม่ตั้งค่าเริ่มต้นเป็น "1"
         # (None = ให้ stdModel ค้นด้วยชื่อไฟล์เสียงแทน)
         resolved_sentence_id = sentence_id or id or None
         resolved_audio_file = audio_file_name or sentence_file_name or ""
@@ -102,7 +97,7 @@ async def evaluate_pronunciation(
             )
 
         # บันทึกลง Temp File โดยคงนามสกุลเดิมไว้ (wav/m4a/webm ฯลฯ)
-        # stdModel ตรวจชนิดไฟล์จากเนื้อไฟล์จริง ไม่เชื่อนามสกุล จึงไม่ต้องแน่ใจว่าตรงกัน
+        # stdModel ตรวจชนิดไฟล์จากเนื้อไฟล์จริง
         suffix = os.path.splitext(audio.filename or "")[1].lower()
         if not re.fullmatch(r"\.[a-z0-9]{1,5}", suffix):
             suffix = ".wav"
