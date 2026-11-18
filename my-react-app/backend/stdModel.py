@@ -8,46 +8,43 @@ import time
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 
-import librosa
-import numpy as np
-import requests
+import librosa # Lib สำหรับโหลดไฟล์เสียงและสกัด MFCC feature
+import numpy as np # คำนวณ Matrix/Vector, DTW, z-score
+import requests # Lib สำหรับดึงเสียงต้นแบบจาก Supabase
+
+# Lib สำหรับโหลดโมเดล wav2vec2 ของ HuggingFace โดยถอดเสียงภาษาไทยแบบ CTC
 import torch
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
 
-# URL ของ Public Bucket บน Supabase
+# URL บน Supabase
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 SUPABASE_BUCKET_URL = f"{SUPABASE_URL}/storage/v1/object/public/sentences-audio"
 
-# ── ตารางที่เก็บข้อความประโยค (ข้อความไทยที่แบ่งคำด้วยเว้นวรรคไว้แล้ว) ──
-WORDS_TABLE = "Sentence"
-# คอลัมน์ข้อความไทยที่เว้นวรรคแยกคำ (เช่น "สวัสดี ครับ") ในตาราง Sentence คือ "pronunciation"
-# ระบุเป็นลำดับไว้เผื่อเปลี่ยนชื่อคอลัมน์ในอนาคต: โค้ดเลือกชื่อแรกที่มีอยู่จริงในแถว (ใช้ select=* จึงไม่ติด HTTP 400 ถ้าชื่อไม่ตรง)
-WORDS_COLUMNS = ("pronunciation",)
-WORDS_FALLBACK_COLUMN = "thai"          # ข้อความไทยเต็ม (ไม่ได้แบ่งคำ) ใช้เมื่อคอลัมน์ข้างบนว่าง/ไม่ใช่อักษรไทย
+WORDS_TABLE = "Sentence"                # ตารางที่เก็บข้อความประโยค
+WORDS_COLUMNS = ("pronunciation",)      # คอลัมน์ข้อความไทยที่เว้นวรรคแยกคำ
+WORDS_FALLBACK_COLUMN = "thai"          # ข้อความไทยเต็ม (ไม่ได้แบ่งคำ) ใช้ในกรณีที่คอลัมน์แบ่งคำไม่สามารถใช้งานได้
 WORDS_FILE_COLUMN = "audio_file_name"   # ค้นหาสำรองด้วยชื่อไฟล์เสียง (ค้นหลักด้วยคอลัมน์ sentence_id)
 
-# ─────────────────────────────────────────────────────
-# ค่าคงที่
-# ─────────────────────────────────────────────────────
+# กำหนดค่า
 SR = 22050              # sample rate สำหรับสกัด feature
-HOP_LENGTH = 512        # hop ของ MFCC
+HOP_LENGTH = 512        # hop ของ MFCC (1 Frame = 512 samples = 512/22050 sec ~ 23 ms)
 W2V_SR = 16000          # sample rate ที่ wav2vec2 ต้องการ
-TRIM_DB = 20            # threshold ตัดเสียงเงียบหัว-ท้าย
+TRIM_DB = 20            # threshold ตัดเสียงเงียบหัว-ท้าย 20 Decibel
 PASS_THRESHOLD = 0.65   # เกณฑ์ Distance <= 0.65 ถือว่าผ่าน
-EPS = 1e-8
+EPS = 1e-8              # ค่าต่ำสุดสำหรับ MFCC เพื่อป้องกัน log(0) ใน DTW (cosine distance)
 
-# ── เกณฑ์รายคำสำหรับคำสั้น ──
+# เกณฑ์รายคำสำหรับคำสั้น
 SHORT_WORD_FRAMES = 10        # คำที่ต้นแบบมี MFCC < 10 เฟรม (~230 ms) ถือว่าสั้น
 SHORT_WORD_THRESHOLD = 0.75   # เกณฑ์ที่ผ่อนให้คำสั้น
 
-# ── ความน่าเชื่อถือของ alignment ──
+# ความน่าเชื่อถือของ alignment
 LOW_CONF_LOGPROB = -3.0       # conf ต่ำกว่านี้ = โมเดลไม่ค่อยมั่นใจ
 UNRELIABLE_WORD_RATIO = 0.5   # สัดส่วนคำที่ conf ต่ำเกินเกณฑ์
 
-# ── ไฟล์เสียงที่ผู้ใช้ส่งมา ──
-MIN_AUDIO_BYTES = 1000        # เล็กกว่านี้ถือว่าไฟล์ว่าง
-MIN_AUDIO_SEC = 0.3           # หลัง trim สั้นกว่านี้ถือว่าไม่มีเสียงพูด
+# ไฟล์เสียงของผู้ใช้งานที่ถูกส่งมา
+MIN_AUDIO_BYTES = 1000        # ขนาดไฟล์ขั้นต่ำ ถ้าน้อยกว่านี้ถือว่าไฟล์ว่างหรือสั้นเกินไป
+MIN_AUDIO_SEC = 0.3           # หลัง trim ถ้าสั้นกว่านี้ถือว่าไม่มีเสียงพูด
 MIN_PEAK = 1e-3               # แอมพลิจูดสูงสุดต่ำกว่านี้ถือว่าเงียบสนิท
 FFMPEG_TIMEOUT = 30           # วินาที
 
@@ -58,10 +55,8 @@ REF_CACHE_TTL = float(os.environ.get("REF_CACHE_TTL", 3600))           # MFCC + 
 REF_CACHE_SIZE = int(os.environ.get("REF_CACHE_SIZE", 64))
 MAX_CONCURRENT_INFERENCE = int(os.environ.get("MAX_CONCURRENT_INFERENCE", 2))
 
-
 class AudioInputError(Exception):
     """ไฟล์เสียงที่ผู้ใช้ส่งมาใช้ไม่ได้ (ไม่มีไฟล์/ว่าง/เงียบ/สั้น/ถอดรหัสไม่ได้)"""
-
 
 class TTLCache:
     """cache ที่มีอายุและขนาดจำกัด (thread-safe)"""
@@ -97,11 +92,9 @@ class TTLCache:
         with self._lock:
             self._data.clear()
 
-
 WORD_CACHE = TTLCache(WORD_CACHE_TTL, maxsize=512)
 REF_CACHE = TTLCache(REF_CACHE_TTL, maxsize=REF_CACHE_SIZE)
 _INFER_SLOTS = threading.BoundedSemaphore(MAX_CONCURRENT_INFERENCE)
-
 
 def clear_caches():
     """ล้าง cache ทั้งหมด"""
@@ -111,9 +104,7 @@ def clear_caches():
     MATCH_FEAT_CACHE.clear()
 
 
-# ─────────────────────────────────────────────────────
 # โหลดโมเดล Wav2Vec2 ภาษาไทย
-# ─────────────────────────────────────────────────────
 MODEL_ID = "airesearch/wav2vec2-large-xlsr-53-th"
 processor = Wav2Vec2Processor.from_pretrained(MODEL_ID)
 w2v_model = Wav2Vec2ForCTC.from_pretrained(MODEL_ID)
@@ -121,25 +112,19 @@ w2v_model.eval()
 VOCAB = processor.tokenizer.get_vocab()
 BLANK_ID = processor.tokenizer.pad_token_id
 
-
-# ─────────────────────────────────────────────────────
 # ดึงข้อความจากฐานข้อมูล
-# ─────────────────────────────────────────────────────
 MIN_VOCAB_COVERAGE = 0.8   # ข้อความต้องมีตัวอักษรที่โมเดลรู้จัก (อักษรไทย) อย่างน้อยเท่านี้ จึงใช้ได้
 
-
 def _file_basename(identifier):
-    """ชื่อไฟล์เปล่า ๆ จาก path/URL เช่น 'easy/topic_3/a_1730.wav' -> 'a_1730.wav'
-    (/api/topics ส่ง audio_file_name ให้แอปเป็น path ใน bucket แต่คอลัมน์ audio_file_name ใน DB เก็บแค่ชื่อไฟล์
-    จึงต้องตัดโฟลเดอร์ออกก่อนค้น)"""
+    # /api/topics ส่ง audio_file_name ให้แอปเป็น path ใน bucket
+    # แต่คอลัมน์ audio_file_name ใน DB เก็บแค่ชื่อไฟล์ จึงต้องตัดชื่อโฟลเดอร์ออกก่อนค้น
     return str(identifier or "").split("?")[0].rstrip("/").rsplit("/", 1)[-1]
-
 
 def _fetch_sentence_row(filters):
     # select=* : ไม่ระบุชื่อคอลัมน์เอง เพื่อไม่ให้ติด HTTP 400 กรณีชื่อคอลัมน์สะกดต่างจากที่คาดไว้
     response = requests.get(
         f"{SUPABASE_URL}/rest/v1/{WORDS_TABLE}",
-        params={"select": "*", **filters, "limit": 1},
+        params={"select": "*", **filters, "limit": 1}, # เลือกทุก Column + filter + นำมาแถวเดียว
         headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"},
         timeout=10,
     )
@@ -148,31 +133,27 @@ def _fetch_sentence_row(filters):
     rows = response.json()
     return rows[0] if rows else None
 
-
 def _segmented_column(row):
-    """คืนชื่อคอลัมน์ข้อความที่เว้นวรรคแยกคำที่มีอยู่จริงในแถว (ดู WORDS_COLUMNS) หรือ None ถ้าไม่มีสักชื่อ"""
+    # คืนชื่อคอลัมน์ข้อความที่เว้นวรรคแยกคำที่มีอยู่จริงในแถว (ดู WORDS_COLUMNS) หรือ None ถ้าไม่มีสักชื่อ
     for name in WORDS_COLUMNS:
         if name in row:
             return name
     return None
 
-
 def _usable_words(text):
-    """แยกคำตามเว้นวรรค คืน None ถ้าว่าง หรือเป็นอักษรที่โมเดลไม่รู้จัก (เช่นโรมัน) ซึ่งจะถูกข้ามหมดตอน align"""
-    words = str(text or "").split()
-    chars = [c for w in words for c in w]
+    # แยกคำตามเว้นวรรค คืน None ถ้าว่าง หรือเป็นอักษรที่โมเดลไม่รู้จัก
+    words = str(text or "").split() # แปลงเป็น string แล้วแยกตามช่องว่าง
+    chars = [c for w in words for c in w] # รวมทุกตัวอักษรของทุกคำอยู่ใน list เดียว
     if not chars:
         return None
-    known = sum(1 for c in chars if c in VOCAB)
+    known = sum(1 for c in chars if c in VOCAB) # นับจำนวนตัวอักษร (ไทย) ที่โมเดลรู้จัก
     return words if known / len(chars) >= MIN_VOCAB_COVERAGE else None
 
-
 def _lookup_words(identifier, sentence_id=None):
-    """หารายการคำของประโยค คืน (words, source) โดย source คือชื่อคอลัมน์ที่ใช้ (None ถ้าไม่พบ)
-    ค้นด้วย sentence_id (primary key) เป็นหลัก — ไม่ขึ้นกับรูปแบบชื่อไฟล์
-    ถ้าไม่เจอ ค้นด้วยชื่อไฟล์เปล่า ๆ (ตัดโฟลเดอร์ออก) แล้วค่อยลองค่าเต็มตามที่ส่งมา"""
+    # ค้นรายการคำของประโยคด้วย sentence_id เป็นหลัก
+    # ถ้าไม่เจอ ค้นด้วยชื่อไฟล์เปล่า ๆ (ตัดโฟลเดอร์ออก) แล้วค่อยลองค่าเต็มตามที่ส่งมา
     sid = str(sentence_id).strip() if sentence_id is not None else ""
-    sid = sid if sid.isdigit() and int(sid) > 0 else ""
+    sid = sid if sid.isdigit() and int(sid) > 0 else "" # รับเฉพาะ int > 0
     basename = _file_basename(identifier)
 
     cache_key = f"id:{sid}" if sid else f"file:{basename or identifier}"
@@ -188,9 +169,7 @@ def _lookup_words(identifier, sentence_id=None):
     row = None
     if sid:
         row = _fetch_sentence_row({"sentence_id": f"eq.{sid}"})
-        # Node (APIServer.cjs) และ main.py อาจตั้ง sentence_id เป็น "1" อัตโนมัติเมื่อแอปไม่ส่งมา
-        # ถ้าไม่ตรวจ จะดึงข้อความของประโยค #1 มา align กับเสียงของประโยคอื่น -> ผลผิดทั้งหมด
-        # จึงยอมรับแถวที่ค้นด้วย sentence_id ก็ต่อเมื่อชื่อไฟล์เสียงในแถวสอดคล้องกับไฟล์ที่ประเมินอยู่
+        # ยอมรับแถวที่ค้นด้วย sentence_id ก็ต่อเมื่อชื่อไฟล์เสียงในแถวสอดคล้องกับไฟล์ที่ประเมินอยู่
         if row is not None and basename:
             row_name = str(row.get(WORDS_FILE_COLUMN) or "")
             row_url = str(row.get("audio_url") or "")
@@ -219,30 +198,25 @@ def _lookup_words(identifier, sentence_id=None):
             if words:
                 source = column
                 break
-
     if words:
         WORD_CACHE.put(cache_key, (tuple(words), source))
     else:
         WORD_CACHE.put(cache_key, None, ttl=WORD_NEG_CACHE_TTL)
-    return words, source
-
+    return words, source # return เป็น words, source โดย source คือชื่อคอลัมน์ที่ใช้ (None ถ้าไม่พบ)
 
 def fetch_word_list(identifier, sentence_id=None):
-    """หารายการคำของประโยค (None ถ้าไม่พบ)"""
-    return _lookup_words(identifier, sentence_id)[0]
+    # หารายการคำของประโยค (None ถ้าไม่พบ)
+    return _lookup_words(identifier, sentence_id)[0] 
 
 
-# ─────────────────────────────────────────────────────
-# ถอดรหัสและโหลดไฟล์เสียง
-# ─────────────────────────────────────────────────────
+# ตรวจสอบรูปแบบไฟล์เสียงจากเนื้อไฟล์จริงว่าเป็น .wav หรือไม่
 def _is_wav(path):
     with open(path, "rb") as f:
         head = f.read(12)
     return head[:4] == b"RIFF" and head[8:12] == b"WAVE"
 
-
 def _find_ffmpeg():
-    found = shutil.which("ffmpeg")
+    found = shutil.which("ffmpeg") # หา ffmpeg ใน PATH ของระบบ
     if found:
         return found
     try:
@@ -251,37 +225,35 @@ def _find_ffmpeg():
     except Exception:
         return None
 
-
 def _decode_with_ffmpeg(path):
     ffmpeg = _find_ffmpeg()
     if not ffmpeg:
         raise AudioInputError("เซิร์ฟเวอร์ยังถอดรหัสไฟล์เสียงรูปแบบนี้ไม่ได้ (ต้องติดตั้ง ffmpeg: pip install imageio-ffmpeg)")
-    fd, out_path = tempfile.mkstemp(suffix=".wav")
+    fd, out_path = tempfile.mkstemp(suffix=".wav") # สร้างไฟล์ชั่วคราวสำหรับผลลัพธ์ .wav ที่แปลงแล้ว
     os.close(fd)
     try:
         subprocess.run(
             [ffmpeg, "-y", "-v", "error", "-i", path, "-ac", "1", "-ar", str(SR), "-f", "wav", out_path],
             check=True, capture_output=True, timeout=FFMPEG_TIMEOUT,
         )
-        y, _ = librosa.load(out_path, sr=SR, mono=True)
+        y, _ = librosa.load(out_path, sr=SR, mono=True) # โหลดไฟล์ .wav ที่แปลงแล้วด้วย librosa เป็น array
         return y
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired: # ffmpeg ถอดรหัสช้าเกินไป
         raise AudioInputError("ถอดรหัสไฟล์เสียงใช้เวลานานเกินไป กรุณาอัดใหม่") from None
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError: # ffmpeg ถอดรหัสไม่สำเร็จ ไฟล์เสียหรือไม่รองรับ
         raise AudioInputError("ไฟล์เสียงเสียหายหรือเป็นรูปแบบที่ไม่รองรับ กรุณาอัดใหม่") from None
     except Exception:
         raise AudioInputError("ไฟล์เสียงเสียหายหรือเป็นรูปแบบที่ไม่รองรับ กรุณาอัดใหม่") from None
     finally:
         if os.path.exists(out_path):
-            os.remove(out_path)
-
+            os.remove(out_path) # ลบไฟล์ชั่วคราวทิ้ง
 
 def _decode_audio(path):
     def direct():
-        return librosa.load(path, sr=SR, mono=True)[0]
+        return librosa.load(path, sr=SR, mono=True)[0] # โหลดไฟล์เสียงด้วย librosa โดยตรง (ถ้าเป็น .wav ที่ librosa รองรับได้)
 
-    order = [direct, lambda: _decode_with_ffmpeg(path)]
-    if not _is_wav(path):
+    order = [direct, lambda: _decode_with_ffmpeg(path)] # base case ลองโหลดด้วย librosa
+    if not _is_wav(path): # ถ้าไม่ใช่ .wav ให้ลองด้วย ffmpeg ก่อน
         order.reverse()
 
     ffmpeg_err = None
@@ -295,38 +267,38 @@ def _decode_audio(path):
     raise ffmpeg_err or AudioInputError("ไฟล์เสียงเสียหายหรือเป็นรูปแบบที่ไม่รองรับ กรุณาอัดใหม่")
 
 
+""" Main Functions for Pronunciation Evaluation """
+
 def load_audio(path):
-    """โหลดเสียง (SR) และตัดเสียงเงียบหัว-ท้าย"""
+    # โหลดเสียง (SR) และตัดเสียงเงียบหัว-ท้าย
     if not path or not os.path.isfile(path):
         raise AudioInputError("ไม่พบไฟล์เสียงที่ส่งมา กรุณาอัดเสียงใหม่")
     if os.path.getsize(path) < MIN_AUDIO_BYTES:
         raise AudioInputError("ไฟล์เสียงว่างเปล่าหรือสั้นเกินไป กรุณาอัดเสียงใหม่")
 
-    y = _decode_audio(path)
+    y = _decode_audio(path) # ถอดรหัสเป็น array
     if y.size == 0 or not np.all(np.isfinite(y)):
         raise AudioInputError("ไฟล์เสียงไม่มีข้อมูลเสียงที่ใช้ได้ กรุณาอัดเสียงใหม่")
     if float(np.max(np.abs(y))) < MIN_PEAK:
         raise AudioInputError("ไม่ได้ยินเสียงพูด กรุณาพูดใกล้ไมโครโฟนมากขึ้นแล้วอัดใหม่")
 
-    y, _ = librosa.effects.trim(y, top_db=TRIM_DB)
-    if len(y) < MIN_AUDIO_SEC * SR:
+    y, _ = librosa.effects.trim(y, top_db=TRIM_DB) # ตัดช่วงเสียงเงียบหัว-ท้าย
+    if len(y) < MIN_AUDIO_SEC * SR: # หาก trim แล้วสั้นกว่า 0.3 วินาที ถือว่าเสียงสั้นเกินไป
         raise AudioInputError("เสียงสั้นเกินไป กรุณาอัดเสียงใหม่")
-    return y
+    return y # คืนค่าสัญญาณเสียงเป็น array ที่ trim แล้ว
 
 
-# ─────────────────────────────────────────────────────
 # Feature Extraction (MFCC 13 มิติ + z-score)
-# ─────────────────────────────────────────────────────
 def zscore(block):
+    # ทำ z-score norm ต่อแถว ตามแกนเวลา
     return (block - np.mean(block, axis=1, keepdims=True)) / (
         np.std(block, axis=1, keepdims=True) + 1e-6
     )
 
-
 def extract_features(y):
+    # สกัด MFCC 13 มิติ ได้ shape (13, จำนวน frame)
     mfcc = librosa.feature.mfcc(y=y, sr=SR, n_mfcc=13, hop_length=HOP_LENGTH)
-    return zscore(mfcc)
-
+    return zscore(mfcc) # นำไป norm เพื่อลดผลกระทบของระดับเสียงหรือไมค์ที่ต่างกัน
 
 def distance_to_percentage(dist, max_dist=1.2):
     if dist < 0:
@@ -335,109 +307,112 @@ def distance_to_percentage(dist, max_dist=1.2):
     return round(score, 2)
 
 
-# ─────────────────────────────────────────────────────
-# DTW
-# ─────────────────────────────────────────────────────
+# DTW (Dynamic Time Warping) สำหรับเปรียบเทียบเสียงต้นแบบกับเสียงผู้ใช้
 def dtw_distance(feat_a, feat_b):
+    # EPS ป้องกัน log(0) ที่ไม่สามารถนำไปคำนวณ cosine ได้
     a = feat_a + EPS
     b = feat_b + EPS
     try:
+        # d = matrix ของ distance, wp = warping path (index ของ frame ที่ match กัน)
         d, wp = librosa.sequence.dtw(X=a, Y=b, metric="cosine")
         if np.isfinite(d[-1, -1]):
-            return float(d[-1, -1]) / len(wp)
+            return float(d[-1, -1]) / len(wp) # norm ด้วยความยาว path เพื่อไม่ให้ประโยคที่ยาวมีค่า distance สูงเกินไป
     except Exception:
-        pass
+        pass # เทียบระยะห่างทำ DTW ไม่ได้
     return float("inf")
 
 
-# ─────────────────────────────────────────────────────
-# CTC Forced Alignment
-# ─────────────────────────────────────────────────────
+# CTC Forced Alignment สำหรับหาระยะเวลาเริ่มต้น-สิ้นสุดของแต่ละคำในเสียงผู้ใช้
 def ctc_forced_align(log_probs, targets, blank):
+    # log_probs: (T เฟรม, จำนวน vocab), targets: ลำดับ token id ที่ต้องการ align
     targets = np.asarray(targets)
-    T = log_probs.shape[0]
+    T = log_probs.shape[0] # จำนวนเฟรมของเสียงผู้ใช้จาก wav2vec2
     L = len(targets)
     if L == 0:
         raise ValueError("ไม่มี token ให้ align")
 
+    # นับคู่ token ซ้ำติดกัน (CTC ต้องมี blank คั่น)
     repeats = int(np.sum(targets[1:] == targets[:-1])) if L > 1 else 0
-    need = L + repeats
+    need = L + repeats # จำนวนเฟรมขั้นต่ำที่ต้องมี
     if T < need:
         raise ValueError(
             f"เสียงสั้นเกินไปสำหรับข้อความนี้ (ต้องการอย่างน้อย {need} เฟรม "
             f"เพราะมี {L} ตัวอักษร ซ้ำติดกัน {repeats} คู่ แต่มีเพียง {T} เฟรม)"
         )
 
-    S = 2 * L + 1
-    NEG = -1e30
-    ext = np.full(S, blank, dtype=np.int64)
-    ext[1::2] = targets
-    emit = log_probs[:, ext]
+    S = 2 * L + 1 # จำนวน state ใน trellis: blank, token, blank, token, ..., blank
+    NEG = -1e30 # แทนค่า -อนันต์ (ใช้ค่าจริงเพื่อเลี่ยงปัญหา inf ในการคำนวณ)
+    ext = np.full(S, blank, dtype=np.int64) # สร้างลำดับขยายเริ่มด้วย blank ทุกช่อง
+    ext[1::2] = targets # ใส่ token ลงตำแหน่งคี่ (1,3,5,...) ตำแหน่งคู่เป็น blank
+    emit = log_probs[:, ext] # ดึง log prob ของแต่ละ state ในแต่ละเฟรม shape (T, S)
 
-    skip_ok = np.zeros(S, dtype=bool)
+    skip_ok = np.zeros(S, dtype=bool) # ระบุว่า state ไหนกระโดดข้ามจาก s-2 มาได้
     for s in range(2, S):
+         # ข้ามได้เมื่อเป็น token (ไม่ใช่ blank) และไม่ซ้ำกับ token ก่อนหน้า
         skip_ok[s] = ext[s] != blank and ext[s] != ext[s - 2]
 
+    # ตาราง Dynamic Programming เก็บ log prob สูงสุดของแต่ละ state ในแต่ละเฟรม
     dp = np.full((T, S), NEG)
+    # ตาราง BackPointer เก็บทิศทางย้อนกลับของ state ที่ดีที่สุด (0=stay, 1=from s-1, 2=from s-2)
     bp = np.zeros((T, S), dtype=np.int8)
-    dp[0, 0] = emit[0, 0]
-    dp[0, 1] = emit[0, 1]
-    idx = np.arange(S)
+    dp[0, 0] = emit[0, 0] # frame แรกเริ่มที่ blank state แรก
+    dp[0, 1] = emit[0, 1] # frame แรกเริ่มที่ token state แรก
+    idx = np.arange(S) # index state ไว้ใช้เลือกค่าแบบ Vectorized
 
-    for t in range(1, T):
-        stay = dp[t - 1]
+    for t in range(1, T): # วนแต่ละ frame เวลาของเสียงผู้ใช้
+        stay = dp[t - 1] # 0 = stay (อยู่ที่ state เดิม)
         p1 = np.full(S, NEG)
-        p1[1:] = dp[t - 1, :-1]
+        p1[1:] = dp[t - 1, :-1] # 1 = from s-1 (มาจาก state ก่อนหน้า 1 ช่อง)
         p2 = np.full(S, NEG)
-        p2[2:] = dp[t - 1, :-2]
+        p2[2:] = dp[t - 1, :-2] # 2 = from s-2 (มาจาก state ก่อนหน้า 2 ช่อง)
         p2[~skip_ok] = NEG
-        cand = np.stack([stay, p1, p2])
-        best = cand.argmax(axis=0)
-        dp[t] = cand[best, idx] + emit[t]
+        cand = np.stack([stay, p1, p2]) # รวม log prob ของแต่ละทิศทางเป็น matrix shape (3, S)
+        best = cand.argmax(axis=0) # เลือกตัวเลือกทิี่มี log prob สูงสุดของแต่ละ state
+        dp[t] = cand[best, idx] + emit[t] # คะแนนสะสม = คะแนนตัวเลือก + log prob เฟรมนี้
         bp[t] = best
 
     s = S - 1 if dp[-1, S - 1] >= dp[-1, S - 2] else S - 2
+    # state สุดท้ายต้องจบที่ blank ท้าย หรือ token สุดท้าย เลือกอันที่คะแนนดีกว่า
     if dp[-1, s] <= NEG / 2:
         raise ValueError("ไม่สามารถ align ได้ (เสียงสั้นเกินไปสำหรับข้อความ)")
 
     path = np.zeros(T, dtype=np.int64)
-    for t in range(T - 1, -1, -1):
-        path[t] = s
-        s -= int(bp[t, s])
-    return path
-
+    for t in range(T - 1, -1, -1): # ย้อนรอยจากเฟรมสุดท้ายไปเฟรมแรก
+        path[t] = s # บันทึก state ของเฟรมนี้
+        s -= int(bp[t, s]) # ถอย state ตามตัวเลือกที่จำไว้
+    return path # คืนลำดับ state (คี่ = token, คู่ = blank)
 
 def word_to_token_ids(word):
-    return [VOCAB[c] for c in word if c in VOCAB]
-
+    return [VOCAB[c] for c in word if c in VOCAB] # แปลงแต่ละตัวอักษรเป็น token id ข้ามตัวที่ไม่รู้จัก
 
 def align_words(y, words):
+    # แปลง sample rate จาก 22050 เป็น 16000 ให้ตรงกับที่โมเดลต้องการ
     y16 = librosa.resample(y, orig_sr=SR, target_sr=W2V_SR)
     inputs = processor(y16, return_tensors="pt", sampling_rate=W2V_SR).input_values
     with _INFER_SLOTS:
         with torch.inference_mode():
             logits = w2v_model(inputs).logits
     lp = torch.log_softmax(logits, dim=-1)[0].numpy()
-    T = lp.shape[0]
-    frame_dur = (len(y16) / W2V_SR) / T
+    T = lp.shape[0] # จำนวนเฟรมของโมเดล
+    frame_dur = (len(y16) / W2V_SR) / T # ระยะเวลาต่อเฟรม (วินาที) = ความยาวเสียง / จำนวนเฟรม
 
-    kept_words, tokens, owner = [], [], []
+    kept_words, tokens, owner = [], [], [] # คำที่ใช้ได้, token รวมทุกคำ, ดัชนีคำเจ้าของแต่ละ token
     for w in words:
-        ids = word_to_token_ids(w)
-        if not ids:
+        ids = word_to_token_ids(w) # แปลงคำเป็น token
+        if not ids: # ถ้าไม่มีคำที่ token โมเดลรู้จัก ข้ามไปเลย
             continue
-        kept_words.append(w)
+        kept_words.append(w) # เก็บคำ
         for i in ids:
-            tokens.append(i)
-            owner.append(len(kept_words) - 1)
+            tokens.append(i) # เพิ่ม token ต่อท้ายลำดับรวม
+            owner.append(len(kept_words) - 1) # จดว่า token นี้เป็นของคำลำดับที่เท่าไร
     if not kept_words:
         raise ValueError("ไม่มีคำที่ align ได้")
 
-    path = ctc_forced_align(lp, np.array(tokens), BLANK_ID)
+    path = ctc_forced_align(lp, np.array(tokens), BLANK_ID) # หาว่าแต่ละเฟรมอยู่ state ไหน
 
-    n_tok = len(tokens)
-    first = np.full(n_tok, -1)
-    last = np.full(n_tok, -1)
+    n_tok = len(tokens) # จำนวน token ทั้งหมด
+    first = np.full(n_tok, -1) # เฟรมแรกที่ token นั้นปรากฏ
+    last = np.full(n_tok, -1) # เฟรมสุดท้ายที่ token นั้นปรากฏ
     for t, s in enumerate(path):
         if s % 2 == 1:
             k = s // 2
@@ -448,32 +423,31 @@ def align_words(y, words):
     peak = [float(lp[first[k]:last[k] + 1, tokens[k]].max()) for k in range(n_tok)]
 
     owner = np.array(owner)
-    w_first, w_last, conf = [], [], []
+    w_first, w_last, conf = [], [], [] # เฟรมเริ่ม/จบ/ความมั่นใจของแต่ละคำ
     for wi in range(len(kept_words)):
         idx = np.where(owner == wi)[0]
-        w_first.append(first[idx[0]])
-        w_last.append(last[idx[-1]])
-        conf.append(float(np.mean([peak[k] for k in idx])))
+        w_first.append(first[idx[0]]) # เฟรมเริ่มของคำ = เฟรมแรกของ token แรก
+        w_last.append(last[idx[-1]]) # เฟรมจบ = เฟรมสุดท้ายของ token สุดท้าย
+        conf.append(float(np.mean([peak[k] for k in idx]))) # ความมั่นใจคำ = ค่าเฉลี่ยของ token ในคำ
 
-    starts = [0.0]
+    starts = [0.0] # คำแรกเริ่มที่เฟรม 0
     for i in range(1, len(kept_words)):
+        # ขอบเขตระหว่างคำ = จุดกึ่งกลางของช่องว่างระหว่างคำก่อนหน้ากับคำนี้
         starts.append((w_last[i - 1] + 1 + w_first[i]) / 2.0)
-    ends = starts[1:] + [float(T)]
+    ends = starts[1:] + [float(T)] # จบของแต่ละคำ = เริ่มของคำถัดไป คำสุดท้ายจบที่ท้ายเสียง
 
     return [
         {
-            "word": kept_words[i],
-            "start_time": starts[i] * frame_dur,
-            "end_time": ends[i] * frame_dur,
-            "conf": conf[i],
+            "word": kept_words[i], # ตัวคำ
+            "start_time": starts[i] * frame_dur, # เวลาเริ่ม (วินาที)
+            "end_time": ends[i] * frame_dur, # เวลาจบ (วินาที)
+            "conf": conf[i], # ความมั่นใจของโมเดล
         }
         for i in range(len(kept_words))
     ]
 
 
-# ─────────────────────────────────────────────────────
 # Word Segmentation to Arrays & Word-Level Evaluation
-# ─────────────────────────────────────────────────────
 def segment_features_to_word_arrays(feat, boundaries):
     total = feat.shape[1]
     out = []
@@ -485,10 +459,8 @@ def segment_features_to_word_arrays(feat, boundaries):
         out.append({"word": b["word"], "array": feat[:, s:e], "conf": b.get("conf")})
     return out
 
-
 def threshold_for_word(ref_frames, base=PASS_THRESHOLD):
     return max(base, SHORT_WORD_THRESHOLD) if ref_frames < SHORT_WORD_FRAMES else base
-
 
 def evaluate_word_arrays(ref_words, user_words, pass_threshold=PASS_THRESHOLD):
     results = []
@@ -518,9 +490,7 @@ def evaluate_word_arrays(ref_words, user_words, pass_threshold=PASS_THRESHOLD):
     return results
 
 
-# ─────────────────────────────────────────────────────
 # ดาวน์โหลดเสียงต้นแบบจาก Supabase + Cache
-# ─────────────────────────────────────────────────────
 def fetch_audio_from_supabase(audio_path_or_url):
     if str(audio_path_or_url).startswith("http"):
         file_url = audio_path_or_url
@@ -539,7 +509,6 @@ def fetch_audio_from_supabase(audio_path_or_url):
     temp_file.write(response.content)
     temp_file.close()
     return temp_file.name
-
 
 def get_reference(audio_file_name, word_list):
     key_words = tuple(word_list) if word_list else None
@@ -571,8 +540,7 @@ def get_reference(audio_file_name, word_list):
             os.remove(temp_path)
 
 
-# =========================================================
-# Process 8 Engine: Compare Result
+# Compare Result
 # =========================================================
 def compare_result(rec_history_id, audio_file_name, user_audio_path, user_id=None, sentence_id=None,
                    words_text=None, **kwargs):
@@ -661,16 +629,13 @@ def compare_result(rec_history_id, audio_file_name, user_audio_path, user_id=Non
 
     return evaluation_result, db_record
 
-
 async def compare_result_async(*args, **kwargs):
     """ใช้ใน endpoint แบบ async def ไม่ให้บล็อก event loop ของ FastAPI"""
     return await asyncio.to_thread(compare_result, *args, **kwargs)
 
 
-# ─────────────────────────────────────────────────────
 # Speak to Match: เทียบเสียงผู้ใช้กับเสียงต้นแบบของทุกประโยคใน Supabase
-# 1) จัดอันดับทุกประโยคด้วย MFCC + chroma + DTW  2) เอาอันดับ 1 ไปประเมินรายคำแบบปกติ แล้วตัดสินว่าตรงจริงหรือไม่
-# ─────────────────────────────────────────────────────
+# จัดอันดับทุกประโยคด้วย MFCC + chroma + DTW  2) เอาอันดับ 1 ไปประเมินรายคำแบบปกติ แล้วตัดสินว่าตรงจริงหรือไม่
 MATCH_MIN_PASS_RATIO = 0.5     # ต้องพูดผ่านอย่างน้อยสัดส่วนนี้ของคำในประโยค (2 คำ = 1 คำ, 3 คำ = 2 คำ, 4 คำ = 2 คำ) และอย่างน้อย 1 คำ
 MATCH_OPEN_ENDED_STRICTNESS = 0.6   # การค้นคำแบบไม่บังคับตำแหน่งมีอิสระมากกว่า จึงต้องใกล้กว่าเกณฑ์ปกติ (เกณฑ์ปกติ x ค่านี้) ค่านี้ยังไม่ได้ปรับจากเสียงจริง
 MATCH_SHORT_FRAMES = 15        # คำที่ต้นแบบสั้นกว่านี้ (~350 ms) หาเจอได้ง่ายแม้ไม่ได้พูด จึงไม่รับจากการค้นแบบไม่บังคับตำแหน่ง
@@ -682,7 +647,6 @@ MATCH_MAX_SENTENCES = int(os.environ.get("MATCH_MAX_SENTENCES", 1000))
 
 SENTENCE_LIST_CACHE = TTLCache(WORD_CACHE_TTL, maxsize=1)             # รายการประโยคทั้งหมด
 MATCH_FEAT_CACHE = TTLCache(REF_CACHE_TTL, maxsize=2048)              # MFCC ของเสียงต้นแบบแต่ละประโยค
-
 
 def _fetch_all_sentences():
     """อ่านประโยคทั้งหมดที่มีไฟล์เสียงจากตาราง Sentence (cache ไว้ช่วงสั้น ๆ)"""
@@ -703,7 +667,6 @@ def _fetch_all_sentences():
     SENTENCE_LIST_CACHE.put("all", rows)
     return rows
 
-
 def extract_match_features(y):
     """ฟีเจอร์สำหรับจับคู่ประโยค: MFCC 13 มิติ + chroma 12 มิติ (z-score แล้วต่อกัน)
     chroma ช่วยจับโทน/ระดับเสียงที่ MFCC อย่างเดียวแยกได้ไม่ดี"""
@@ -711,7 +674,6 @@ def extract_match_features(y):
     chroma = zscore(librosa.feature.chroma_stft(y=y, sr=SR, hop_length=HOP_LENGTH))
     frames = min(mfcc.shape[1], chroma.shape[1])
     return np.vstack([mfcc[:, :frames], chroma[:, :frames]])
-
 
 def _reference_features(row):
     """ฟีเจอร์ MFCC+chroma ของเสียงต้นแบบประโยคนี้ (None ถ้าดาวน์โหลด/ถอดรหัสไม่ได้) cache ไว้ใช้ซ้ำ"""
@@ -731,11 +693,9 @@ def _reference_features(row):
     MATCH_FEAT_CACHE.put(source, feat)
     return feat
 
-
 def enough_words_passed(passed, total):
     """ผ่านอย่างน้อยครึ่งหนึ่งของคำในประโยค (และอย่างน้อย 1 คำ)"""
     return total > 0 and passed >= 1 and passed >= MATCH_MIN_PASS_RATIO * total
-
 
 def subsequence_distance(query, target):
     """ระยะ DTW ของ query กับ 'ช่วงใดก็ได้' ของ target (เริ่ม/จบตรงไหนของ target ก็ได้) หารด้วยความยาว path
@@ -748,7 +708,6 @@ def subsequence_distance(query, target):
     except Exception:
         pass
     return float("inf")
-
 
 def _open_ended_words(row, audio_name, feat_user):
     """ประเมินรายคำแบบไม่บังคับตำแหน่ง ใช้ตอนผู้ใช้พูดไม่ครบประโยค:
@@ -774,7 +733,6 @@ def _open_ended_words(row, audio_name, feat_user):
             "status": "PASS" if finite and cost <= threshold else "NEEDS_IMPROVEMENT",
         })
     return results
-
 
 def _evaluate_candidate(row, user_audio_path, distance, feat_user):
     """ประเมินเสียงผู้ใช้กับประโยคนี้ คืน (matched, words, passed, total)
@@ -827,7 +785,6 @@ def _evaluate_candidate(row, user_audio_path, distance, feat_user):
         passed = sum(1 for w in words if w["status"] == "PASS")
         return enough_words_passed(passed, len(words)), words, passed, len(words)
     return distance <= MATCH_MAX_DISTANCE, [], 0, 0
-
 
 def match_sentence(user_audio_path, candidates=None):
     """หาประโยคที่เสียงผู้ใช้ใกล้เคียงที่สุดจากเสียงต้นแบบทั้งระบบ (ส่งกลับอันดับเดียว)

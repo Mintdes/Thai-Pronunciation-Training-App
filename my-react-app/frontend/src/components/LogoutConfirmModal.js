@@ -1,4 +1,4 @@
-import { Modal, View, Text, TouchableWithoutFeedback } from 'react-native';
+import { Modal, TouchableWithoutFeedback } from 'react-native';
 import styled from 'styled-components/native';
 import { ButtonGroupHorizontal, DarkPillButton, OrangePillButton } from '../shared/AuthStyles';
 
@@ -47,7 +47,7 @@ function LogoutConfirmModal({ onCancel, onConfirm }) {
     <Modal transparent animationType="fade" visible onRequestClose={onCancel}>
       <TouchableWithoutFeedback onPress={onCancel}>
         <Overlay>
-          <TouchableWithoutFeedback onPress={() => {}}>
+          <TouchableWithoutFeedback onPress={() => { }}>
             <Card>
               <Title>Are you sure you want to log out?</Title>
               <Subtitle>When you log out, you'll need to sign in again next time.</Subtitle>

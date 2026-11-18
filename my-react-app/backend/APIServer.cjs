@@ -83,7 +83,7 @@ app.use(express.json());
 // ----------------------------------------------------
 // Rate limiting กัน brute-force
 // ----------------------------------------------------
-const otpLimiter = rateLimit({
+const otpLimiter = rateLimit({ // สำหรับ register
     windowMs: 15 * 60 * 1000,
     max: 5,
     message: { message: "ลองมากเกินไป กรุณารอสักครู่แล้วลองใหม่อีกครั้ง" },
@@ -91,7 +91,7 @@ const otpLimiter = rateLimit({
     legacyHeaders: false,
 });
 
-const passwordResetLimiter = rateLimit({
+const passwordResetLimiter = rateLimit({ // สำหรับ forgot-password
     windowMs: 15 * 60 * 1000,
     max: 10,
     message: { message: "ลองมากเกินไป กรุณารอสักครู่แล้วลองใหม่อีกครั้ง" },

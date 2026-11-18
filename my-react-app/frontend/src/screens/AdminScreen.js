@@ -21,38 +21,6 @@ import { apiFetch } from '../utils/apiClient';
 import { saveRecording } from '../utils/recordingManager';
 import { API_URL } from './LoginScreen';
 
-// ==========================================
-// 📝 Backend contract ที่หน้านี้คาดหวัง (ยังไม่มีจริงใน main.py ตอนนี้ — ต้องสร้างเพิ่ม)
-//
-//   GET    /api/admin/topics?level=easy|medium
-//          -> { topics: [{ id, title, icon_url, sentences: [ {sentence_id, thai,
-//               karaoke, pronunciation, eng, label, image_url, audio_file_name} ] }],
-//               weekly: [ ประโยค Weekly ของระดับนี้ เรียงใหม่สุดก่อน (อันแรก = ที่แสดงหน้า Home) ] }
-//
-//   POST   /api/admin/topics            (multipart: icon=<file>, level, title)
-//          -> { id, title, icon_url }
-//
-//   POST   /api/admin/sentences         (multipart: audio=<file>, image=<file?>,
-//               level, topic_id, thai, karaoke, pronunciation, eng, label,
-//               is_weekly='true' เมื่อกดปุ่ม Weekly -> บันทึกลง Sentence.is_weekly และไม่ต้องส่ง topic_id)
-//          -> { sentence_id, ... }
-//
-//   PUT    /api/admin/topics/:id        (multipart: title?, icon=<file?> — ส่งเฉพาะที่เปลี่ยน
-//               อัปเดตตาราง Topic: ชื่อบทเรียน และ/หรือรูป icon)
-//          -> { id, title, icon_url }
-//
-//   DELETE /api/admin/topics/:id        (JSON: { password } — รหัสผ่านของบัญชีที่ล็อกอินอยู่
-//               ลบบทเรียนพร้อมประโยคทั้งหมดในบทนั้น)
-//
-//   PUT    /api/admin/sentences/:id     (multipart, ฟิลด์เดียวกับ POST — ส่งเฉพาะที่เปลี่ยน
-//               ก็ได้ audio/image เป็น optional ถ้าไม่อัปโหลดใหม่คือไม่แก้ไฟล์เดิม)
-//
-//   DELETE /api/admin/sentences/:id
-//
-// ทุก request แนบ Authorization: Bearer <authToken> แบบเดียวกับหน้าอื่น ๆ และฝั่ง backend
-// ต้องเช็คเองว่า user นี้มี role เป็น admin จริง (อย่า trust แค่ว่ามีหน้านี้ให้กดถึง)
-// ==========================================
-
 const LEVEL_OPTIONS = [
   { id: 'easy', label: 'Beginner' },
   { id: 'medium', label: 'Medium' },
@@ -1471,7 +1439,7 @@ function AdminScreen({ authToken, onBack }) {
             </InputGroup>
 
             <InputGroup>
-              <InputLabel>Pronunciation</InputLabel>
+              <InputLabel>Pronunciation *</InputLabel>
               <InputWrapper>
                 <StyledInput
                   value={pronunciation}
