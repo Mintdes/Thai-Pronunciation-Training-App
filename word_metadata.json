@@ -1,0 +1,879 @@
+{
+  "ai0.0-thankyou.wav": [
+    {
+      "word": "ขอบ",
+      "start_time": 0.0,
+      "end_time": 0.708
+    },
+    {
+      "word": "คุณ",
+      "start_time": 0.708,
+      "end_time": 1.416
+    }
+  ],
+  "ai0.1-sayagain.wav": [
+    {
+      "word": "ช่วย",
+      "start_time": 0.0,
+      "end_time": 0.445
+    },
+    {
+      "word": "พูด",
+      "start_time": 0.445,
+      "end_time": 0.778
+    },
+    {
+      "word": "อีก",
+      "start_time": 0.778,
+      "end_time": 1.112
+    },
+    {
+      "word": "รอบ",
+      "start_time": 1.112,
+      "end_time": 1.445
+    },
+    {
+      "word": "ได้",
+      "start_time": 1.445,
+      "end_time": 1.779
+    },
+    {
+      "word": "ไหม",
+      "start_time": 1.779,
+      "end_time": 2.112
+    }
+  ],
+  "ai0.2-whatdate.wav": [
+    {
+      "word": "วัน",
+      "start_time": 0.0,
+      "end_time": 0.264
+    },
+    {
+      "word": "นี้",
+      "start_time": 0.264,
+      "end_time": 0.528
+    },
+    {
+      "word": "วัน",
+      "start_time": 0.528,
+      "end_time": 0.792
+    },
+    {
+      "word": "ที่",
+      "start_time": 0.792,
+      "end_time": 1.056
+    },
+    {
+      "word": "เท่า",
+      "start_time": 1.056,
+      "end_time": 1.408
+    },
+    {
+      "word": "ไหร่",
+      "start_time": 1.408,
+      "end_time": 1.76
+    },
+    {
+      "word": "ครับ",
+      "start_time": 1.76,
+      "end_time": 2.112
+    }
+  ],
+  "ai0.3-watchmovie.wav": [
+    {
+      "word": "วัน",
+      "start_time": 0.0,
+      "end_time": 0.257
+    },
+    {
+      "word": "อาทิตย์",
+      "start_time": 0.257,
+      "end_time": 0.856
+    },
+    {
+      "word": "นี้",
+      "start_time": 0.856,
+      "end_time": 1.113
+    },
+    {
+      "word": "เรา",
+      "start_time": 1.113,
+      "end_time": 1.37
+    },
+    {
+      "word": "ไป",
+      "start_time": 1.37,
+      "end_time": 1.541
+    },
+    {
+      "word": "ดู",
+      "start_time": 1.541,
+      "end_time": 1.712
+    },
+    {
+      "word": "หนัง",
+      "start_time": 1.712,
+      "end_time": 2.054
+    },
+    {
+      "word": "กัน",
+      "start_time": 2.054,
+      "end_time": 2.311
+    },
+    {
+      "word": "ไหม",
+      "start_time": 2.311,
+      "end_time": 2.568
+    }
+  ],
+  "ai0.4-hellotom imfine.wav": [
+    {
+      "word": "สวัสดี",
+      "start_time": 0.0,
+      "end_time": 0.965
+    },
+    {
+      "word": "ค่ะ",
+      "start_time": 0.965,
+      "end_time": 1.448
+    },
+    {
+      "word": "คุณ",
+      "start_time": 1.448,
+      "end_time": 1.931
+    },
+    {
+      "word": "ทอม",
+      "start_time": 1.931,
+      "end_time": 2.413
+    },
+    {
+      "word": "ฉัน",
+      "start_time": 2.413,
+      "end_time": 2.896
+    },
+    {
+      "word": "สบาย",
+      "start_time": 2.896,
+      "end_time": 3.54
+    },
+    {
+      "word": "ดี",
+      "start_time": 3.54,
+      "end_time": 3.861
+    },
+    {
+      "word": "ค่ะ",
+      "start_time": 3.861,
+      "end_time": 4.344
+    }
+  ],
+  "ai0.5-howmuch thisshirt.wav": [
+    {
+      "word": "เสื้อ",
+      "start_time": 0.0,
+      "end_time": 0.48
+    },
+    {
+      "word": "ตัว",
+      "start_time": 0.48,
+      "end_time": 0.768
+    },
+    {
+      "word": "นี้",
+      "start_time": 0.768,
+      "end_time": 1.056
+    },
+    {
+      "word": "ราคา",
+      "start_time": 1.056,
+      "end_time": 1.44
+    },
+    {
+      "word": "เท่า",
+      "start_time": 1.44,
+      "end_time": 1.824
+    },
+    {
+      "word": "ไหร่",
+      "start_time": 1.824,
+      "end_time": 2.208
+    },
+    {
+      "word": "คะ",
+      "start_time": 2.208,
+      "end_time": 2.4
+    }
+  ],
+  "ai0.6-whatdatewewillmeetnextweek.wav": [
+    {
+      "word": "อาทิตย์",
+      "start_time": 0.0,
+      "end_time": 0.551
+    },
+    {
+      "word": "หน้า",
+      "start_time": 0.551,
+      "end_time": 0.865
+    },
+    {
+      "word": "เรา",
+      "start_time": 0.865,
+      "end_time": 1.101
+    },
+    {
+      "word": "จะ",
+      "start_time": 1.101,
+      "end_time": 1.259
+    },
+    {
+      "word": "เจอ",
+      "start_time": 1.259,
+      "end_time": 1.495
+    },
+    {
+      "word": "กัน",
+      "start_time": 1.495,
+      "end_time": 1.731
+    },
+    {
+      "word": "วัน",
+      "start_time": 1.731,
+      "end_time": 1.967
+    },
+    {
+      "word": "ที่",
+      "start_time": 1.967,
+      "end_time": 2.203
+    },
+    {
+      "word": "เท่า",
+      "start_time": 2.203,
+      "end_time": 2.517
+    },
+    {
+      "word": "ไหร่",
+      "start_time": 2.517,
+      "end_time": 2.832
+    }
+  ],
+  "ai0.7-askway.wav": [
+    {
+      "word": "ขอ",
+      "start_time": 0.0,
+      "end_time": 0.271
+    },
+    {
+      "word": "ถาม",
+      "start_time": 0.271,
+      "end_time": 0.677
+    },
+    {
+      "word": "ทาง",
+      "start_time": 0.677,
+      "end_time": 1.083
+    },
+    {
+      "word": "ได้",
+      "start_time": 1.083,
+      "end_time": 1.49
+    },
+    {
+      "word": "ไหม",
+      "start_time": 1.49,
+      "end_time": 1.896
+    }
+  ],
+  "ai0.8-whaturname.wav": [
+    {
+      "word": "คุณ",
+      "start_time": 0.0,
+      "end_time": 0.432
+    },
+    {
+      "word": "ชื่อ",
+      "start_time": 0.432,
+      "end_time": 1.008
+    },
+    {
+      "word": "อะไร",
+      "start_time": 1.008,
+      "end_time": 1.584
+    }
+  ],
+  "ai0.9-nice2meetu.wav": [
+    {
+      "word": "ยินดี",
+      "start_time": 0.0,
+      "end_time": 0.544
+    },
+    {
+      "word": "ที่",
+      "start_time": 0.544,
+      "end_time": 0.87
+    },
+    {
+      "word": "ได้",
+      "start_time": 0.87,
+      "end_time": 1.196
+    },
+    {
+      "word": "รู้จัก",
+      "start_time": 1.196,
+      "end_time": 1.848
+    }
+  ],
+  "ai0.10-hellotue.wav": [
+    {
+      "word": "สวัสดี",
+      "start_time": 0.0,
+      "end_time": 0.854
+    },
+    {
+      "word": "วัน",
+      "start_time": 0.854,
+      "end_time": 1.282
+    },
+    {
+      "word": "อังคาร",
+      "start_time": 1.282,
+      "end_time": 2.136
+    }
+  ],
+  "ai0.11-deliciousfood.wav": [
+    {
+      "word": "อาหาร",
+      "start_time": 0.0,
+      "end_time": 0.581
+    },
+    {
+      "word": "จาน",
+      "start_time": 0.581,
+      "end_time": 0.93
+    },
+    {
+      "word": "นี้",
+      "start_time": 0.93,
+      "end_time": 1.278
+    },
+    {
+      "word": "อร่อย",
+      "start_time": 1.278,
+      "end_time": 1.859
+    },
+    {
+      "word": "มาก",
+      "start_time": 1.859,
+      "end_time": 2.208
+    }
+  ],
+  "ai1.1-hinida.wav": [
+    {
+      "word": "สวัสดี",
+      "start_time": 0.0,
+      "end_time": 0.745
+    },
+    {
+      "word": "ครับ",
+      "start_time": 0.745,
+      "end_time": 1.242
+    },
+    {
+      "word": "คุณ",
+      "start_time": 1.242,
+      "end_time": 1.615
+    },
+    {
+      "word": "นิดา",
+      "start_time": 1.615,
+      "end_time": 2.112
+    }
+  ],
+  "ai1.2-himike.wav": [
+    {
+      "word": "คุณ",
+      "start_time": 0.0,
+      "end_time": 0.386
+    },
+    {
+      "word": "ไมค์",
+      "start_time": 0.386,
+      "end_time": 0.9
+    },
+    {
+      "word": "สวัสดี",
+      "start_time": 0.9,
+      "end_time": 1.672
+    },
+    {
+      "word": "ค่ะ",
+      "start_time": 1.672,
+      "end_time": 2.058
+    },
+    {
+      "word": "ไป",
+      "start_time": 2.058,
+      "end_time": 2.316
+    },
+    {
+      "word": "ไหน",
+      "start_time": 2.316,
+      "end_time": 2.701
+    },
+    {
+      "word": "มา",
+      "start_time": 2.701,
+      "end_time": 2.959
+    },
+    {
+      "word": "คะ",
+      "start_time": 2.959,
+      "end_time": 3.216
+    }
+  ],
+  "ai1.3-iwentshoppinghowrunida.wav": [
+    {
+      "word": "ผม",
+      "start_time": 0.0,
+      "end_time": 0.205
+    },
+    {
+      "word": "ไป",
+      "start_time": 0.205,
+      "end_time": 0.409
+    },
+    {
+      "word": "ช็อปปิ้ง",
+      "start_time": 0.409,
+      "end_time": 1.228
+    },
+    {
+      "word": "มา",
+      "start_time": 1.228,
+      "end_time": 1.432
+    },
+    {
+      "word": "ครับ",
+      "start_time": 1.432,
+      "end_time": 1.842
+    },
+    {
+      "word": "คุณ",
+      "start_time": 1.842,
+      "end_time": 2.149
+    },
+    {
+      "word": "นิดา",
+      "start_time": 2.149,
+      "end_time": 2.558
+    },
+    {
+      "word": "สบาย",
+      "start_time": 2.558,
+      "end_time": 2.967
+    },
+    {
+      "word": "ดี",
+      "start_time": 2.967,
+      "end_time": 3.172
+    },
+    {
+      "word": "ไหม",
+      "start_time": 3.172,
+      "end_time": 3.479
+    },
+    {
+      "word": "ครับ",
+      "start_time": 3.479,
+      "end_time": 3.888
+    }
+  ],
+  "ai1.4-imfine.wav": [
+    {
+      "word": "ฉัน",
+      "start_time": 0.0,
+      "end_time": 0.432
+    },
+    {
+      "word": "สบาย",
+      "start_time": 0.432,
+      "end_time": 1.008
+    },
+    {
+      "word": "ดี",
+      "start_time": 1.008,
+      "end_time": 1.296
+    },
+    {
+      "word": "ค่ะ",
+      "start_time": 1.296,
+      "end_time": 1.728
+    }
+  ],
+  "ai1.5-thankska.wav": [
+    {
+      "word": "ขอบคุณ",
+      "start_time": 0.0,
+      "end_time": 0.96
+    },
+    {
+      "word": "ค่ะ",
+      "start_time": 0.96,
+      "end_time": 1.44
+    }
+  ],
+  "ai2.1-helloimmike.wav": [
+    {
+      "word": "สวัสดี",
+      "start_time": 0.0,
+      "end_time": 0.864
+    },
+    {
+      "word": "ครับ",
+      "start_time": 0.864,
+      "end_time": 1.44
+    },
+    {
+      "word": "ผม",
+      "start_time": 1.44,
+      "end_time": 1.728
+    },
+    {
+      "word": "ชื่อ",
+      "start_time": 1.728,
+      "end_time": 2.304
+    },
+    {
+      "word": "ไมค์",
+      "start_time": 2.304,
+      "end_time": 2.88
+    }
+  ],
+  "ai2.2-helloimmanee.wav": [
+    {
+      "word": "สวัสดี",
+      "start_time": 0.0,
+      "end_time": 0.814
+    },
+    {
+      "word": "ค่ะ",
+      "start_time": 0.814,
+      "end_time": 1.221
+    },
+    {
+      "word": "ฉัน",
+      "start_time": 1.221,
+      "end_time": 1.628
+    },
+    {
+      "word": "ชื่อ",
+      "start_time": 1.628,
+      "end_time": 2.17
+    },
+    {
+      "word": "มานี",
+      "start_time": 2.17,
+      "end_time": 2.713
+    },
+    {
+      "word": "ค่ะ",
+      "start_time": 2.713,
+      "end_time": 3.12
+    }
+  ],
+  "ai2.3-whereufrommanee.wav": [
+    {
+      "word": "คุณ",
+      "start_time": 0.0,
+      "end_time": 0.31
+    },
+    {
+      "word": "มานี",
+      "start_time": 0.31,
+      "end_time": 0.724
+    },
+    {
+      "word": "มา",
+      "start_time": 0.724,
+      "end_time": 0.93
+    },
+    {
+      "word": "จาก",
+      "start_time": 0.93,
+      "end_time": 1.241
+    },
+    {
+      "word": "ประเทศ",
+      "start_time": 1.241,
+      "end_time": 1.861
+    },
+    {
+      "word": "อะไร",
+      "start_time": 1.861,
+      "end_time": 2.274
+    },
+    {
+      "word": "ครับ",
+      "start_time": 2.274,
+      "end_time": 2.688
+    }
+  ],
+  "ai2.4-imthaiwhataboutu.wav": [
+    {
+      "word": "ฉัน",
+      "start_time": 0.0,
+      "end_time": 0.333
+    },
+    {
+      "word": "เป็น",
+      "start_time": 0.333,
+      "end_time": 0.777
+    },
+    {
+      "word": "คน",
+      "start_time": 0.777,
+      "end_time": 0.998
+    },
+    {
+      "word": "ไทย",
+      "start_time": 0.998,
+      "end_time": 1.331
+    },
+    {
+      "word": "ค่ะ",
+      "start_time": 1.331,
+      "end_time": 1.664
+    },
+    {
+      "word": "แล้ว",
+      "start_time": 1.664,
+      "end_time": 2.108
+    },
+    {
+      "word": "คุณ",
+      "start_time": 2.108,
+      "end_time": 2.441
+    },
+    {
+      "word": "ล่ะ",
+      "start_time": 2.441,
+      "end_time": 2.773
+    },
+    {
+      "word": "คุณ",
+      "start_time": 2.773,
+      "end_time": 3.106
+    },
+    {
+      "word": "มา",
+      "start_time": 3.106,
+      "end_time": 3.328
+    },
+    {
+      "word": "จาก",
+      "start_time": 3.328,
+      "end_time": 3.661
+    },
+    {
+      "word": "ประเทศ",
+      "start_time": 3.661,
+      "end_time": 4.326
+    },
+    {
+      "word": "อะไร",
+      "start_time": 4.326,
+      "end_time": 4.77
+    },
+    {
+      "word": "คะ",
+      "start_time": 4.77,
+      "end_time": 4.992
+    }
+  ],
+  "ai2.5-imfromaus.wav": [
+    {
+      "word": "ผม",
+      "start_time": 0.0,
+      "end_time": 0.188
+    },
+    {
+      "word": "มา",
+      "start_time": 0.188,
+      "end_time": 0.377
+    },
+    {
+      "word": "จาก",
+      "start_time": 0.377,
+      "end_time": 0.66
+    },
+    {
+      "word": "ประเทศ",
+      "start_time": 0.66,
+      "end_time": 1.225
+    },
+    {
+      "word": "ออสเตรเลีย",
+      "start_time": 1.225,
+      "end_time": 2.167
+    },
+    {
+      "word": "ครับ",
+      "start_time": 2.167,
+      "end_time": 2.544
+    }
+  ],
+  "ai2.6-imauswhatdoudo.wav": [
+    {
+      "word": "ผม",
+      "start_time": 0.0,
+      "end_time": 0.217
+    },
+    {
+      "word": "เป็น",
+      "start_time": 0.217,
+      "end_time": 0.652
+    },
+    {
+      "word": "คน",
+      "start_time": 0.652,
+      "end_time": 0.869
+    },
+    {
+      "word": "ออสเตรเลีย",
+      "start_time": 0.869,
+      "end_time": 1.955
+    },
+    {
+      "word": "คุณ",
+      "start_time": 1.955,
+      "end_time": 2.281
+    },
+    {
+      "word": "มานี",
+      "start_time": 2.281,
+      "end_time": 2.716
+    },
+    {
+      "word": "ทำงาน",
+      "start_time": 2.716,
+      "end_time": 3.259
+    },
+    {
+      "word": "อะไร",
+      "start_time": 3.259,
+      "end_time": 3.693
+    },
+    {
+      "word": "ครับ",
+      "start_time": 3.693,
+      "end_time": 4.128
+    }
+  ],
+  "ai2.7-imteacherwhataboutu.wav": [
+    {
+      "word": "ฉัน",
+      "start_time": 0.0,
+      "end_time": 0.363
+    },
+    {
+      "word": "เป็น",
+      "start_time": 0.363,
+      "end_time": 0.847
+    },
+    {
+      "word": "ครู",
+      "start_time": 0.847,
+      "end_time": 1.21
+    },
+    {
+      "word": "ค่ะ",
+      "start_time": 1.21,
+      "end_time": 1.572
+    },
+    {
+      "word": "แล้ว",
+      "start_time": 1.572,
+      "end_time": 2.056
+    },
+    {
+      "word": "คุณ",
+      "start_time": 2.056,
+      "end_time": 2.419
+    },
+    {
+      "word": "ล่ะ",
+      "start_time": 2.419,
+      "end_time": 2.782
+    },
+    {
+      "word": "คะ",
+      "start_time": 2.782,
+      "end_time": 3.024
+    }
+  ],
+  "ai2.8-imworkatembassy.wav": [
+    {
+      "word": "ผม",
+      "start_time": 0.0,
+      "end_time": 0.197
+    },
+    {
+      "word": "ทำงาน",
+      "start_time": 0.197,
+      "end_time": 0.688
+    },
+    {
+      "word": "ที่",
+      "start_time": 0.688,
+      "end_time": 0.983
+    },
+    {
+      "word": "สถานทูต",
+      "start_time": 0.983,
+      "end_time": 1.671
+    },
+    {
+      "word": "ออสเตรเลีย",
+      "start_time": 1.671,
+      "end_time": 2.655
+    },
+    {
+      "word": "ครับ",
+      "start_time": 2.655,
+      "end_time": 3.048
+    }
+  ],
+  "ai2.9-howmuchthisdish.wav": [
+    {
+      "word": "อาหาร",
+      "start_time": 0.0,
+      "end_time": 0.543
+    },
+    {
+      "word": "จาน",
+      "start_time": 0.543,
+      "end_time": 0.868
+    },
+    {
+      "word": "นี้",
+      "start_time": 0.868,
+      "end_time": 1.194
+    },
+    {
+      "word": "ราคา",
+      "start_time": 1.194,
+      "end_time": 1.628
+    },
+    {
+      "word": "เท่า",
+      "start_time": 1.628,
+      "end_time": 2.062
+    },
+    {
+      "word": "ไหร่",
+      "start_time": 2.062,
+      "end_time": 2.496
+    }
+  ]
+}
